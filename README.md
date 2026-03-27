@@ -6,13 +6,13 @@ You need to flash latest Armbian (Minimal / IOT, Debian) image to the device and
 ```
 sudo apt update && sudo apt upgrade -y
 sudo apt install git -y
-git clone https://github.com/emintufan/OPi-Zero-LTS-W-WiFi-USB.git
-cd OPi-Zero-LTS-W-WiFi-USB
+git clone https://github.com/emintufan/OPi-Zero-LTS-WiFi-USB.git
+cd OPi-Zero-LTS-WiFi-USB
 sudo chmod +x install.sh
 sudo ./install.sh
 ```
 # Accessing to Filebrowser Quantum
-Just go to: http://YOUR-ORANGE-PI-LOCAL-IP
+Go to: http://YOUR-ORANGE-PI-LOCAL-IP/
 
 Enter login credentials:
 ```
