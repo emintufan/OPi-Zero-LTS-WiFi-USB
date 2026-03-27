@@ -16,7 +16,7 @@ CMD_SYNC = "sync"
 
 WATCH_PATH = "/mnt/usb_share"
 ACT_EVENTS = [DirDeletedEvent, DirMovedEvent, FileDeletedEvent, FileModifiedEvent, FileMovedEvent]
-ACT_TIME_OUT = 5   # This is the time in seconds that the watchdog waits after a change is detected. Usually, if you just save a g-code file this is enough.
+ACT_TIME_OUT = 30   # This is the time in seconds that the watchdog waits after a change is detected. Usually, if you just save a g-code file 5 is enough.
 
 class DirtyHandler(FileSystemEventHandler):
     def __init__(self):
