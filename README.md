@@ -4,7 +4,7 @@ This is a port of mrfenyx's RPi-Zero-W-WiFi-USB script to Orange Pi Zero LTS. It
 # Automated Setup
 You need to flash latest Armbian (Minimal / IOT, Debian) image to the device and power it on. After a successful connection to a network, run those commands via SSH:
 ```
-sudo apt update && apt upgrade -y
+sudo apt update && sudo apt upgrade -y
 sudo apt install git -y
 git clone https://github.com/emintufan/OPi-Zero-LTS-W-WiFi-USB.git
 cd OPi-Zero-LTS-W-WiFi-USB
