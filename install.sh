@@ -5,14 +5,14 @@ USB_FILE_SIZE_MB=2048 # Size of the USB file in Megabytes
 REQUIRED_SPACE_MB=$((USB_FILE_SIZE_MB + 1024)) # Required space including buffer
 MOUNT_FOLDER="/mnt/usb_share"
 USE_EXISTING_FOLDER="no"
-DRIVER_TO_USE="g_multi"
+DRIVER_TO_USE="g_mass_storage"
 if [[ "g_mass_storage" = "$1" ]]; then
     DRIVER_TO_USE="g_mass_storage"
 fi
 
 
 # Known compatible hardware models
-COMPATIBLE_MODELS=("Raspberry Pi Zero W Rev 1.1" "Raspberry Pi Zero 2 W Rev 1.0")
+COMPATIBLE_MODELS=("Xunlong Orange Pi Zero")
 
 # Check the hardware model
 HARDWARE_MODEL=$(cat /proc/device-tree/model)
@@ -61,7 +61,7 @@ install_packages() {
     fi
 
     # Install new packages
-    sudo apt-get install -y samba winbind python3-pip python3-watchdog
+    sudo apt-get install -y python3-pip python3-watchdog
     return $? # Return the exit status of the last command executed
 }
 
@@ -114,19 +114,8 @@ if [ -d "/boot/firmware" ]; then
     BOOT_DIR="/boot/firmware"
 fi
 
-# Enabling USB Driver
-append_text_to_file "dtoverlay=dwc2" "$BOOT_DIR/config.txt" "dtoverlay=dwc2"
-append_text_to_file "dwc2" "/etc/modules" "dwc2"
-
-# Carefully edit commandline.txt to append 'modules-load=dwc2' at the end of the line
-if ! grep -q "modules-load=dwc2" $BOOT_DIR/cmdline.txt; then
-    sudo sed -i '$ s/$/ modules-load=dwc2/' $BOOT_DIR/cmdline.txt && echo "Modified $BOOT_DIR/cmdline.txt successfully."
-else
-    echo "Modification already exists in $BOOT_DIR/cmdline.txt."
-fi
-
-# Disabling power-saving for Wlan
-sudo iw wlan0 set power_save off
+# Disable USB serial
+sudo truncate -s 0 /etc/modules-load.d/modules.conf
 
 # Function to create USB file
 create_usb_file() {
@@ -207,27 +196,59 @@ fi
 append_text_to_file "/piusb.bin $MOUNT_FOLDER vfat users,umask=000 0 2" "/etc/fstab" "/piusb.bin $MOUNT_FOLDER vfat users,umask=000 0 2"
 sudo mount -a
 
-# Configure Samba
-samba_block=$(cat <<'EOT'
-[usb]
-    browseable = yes
-    path = /mnt/usb_share
-    guest ok = yes
-    read only = no
-    create mask = 777
-    directory mask = 777
+# Configure Filebrowser service
+sudo mkdir -p /opt/filebrowser
+sudo wget https://github.com/gtsteffaniak/filebrowser/releases/latest/download/linux-armv7-filebrowser -O /opt/filebrowser/filebrowser
+sudo chmod +x /opt/filebrowser/filebrowser
+
+filebrowser_config=$(cat <<'EOT'
+server:
+  sources:
+    - path: "/mnt/usb_share"
+      config:
+        defaultEnabled: true
+auth:
+  adminUsername: admin
+  adminPassword: admin
 EOT
 )
-append_text_to_file "$samba_block" "/etc/samba/smb.conf" "[usb]"
+append_text_to_file "$filebrowser_config" "/opt/filebrowser/config.yaml" "server:"
 
-# Restart Samba services
-sudo systemctl restart smbd
+FILEBROWSER_ACTIVE_STATUS=$(systemctl is-active filebrowser.service)
+if [[ "$FILEBROWSER_ACTIVE_STATUS" = "active" ]]; then
+    echo "Filebrowser service is currently active, shutting down"
+    sudo systemctl stop filebrowser.service
+    sudo systemctl disable filebrowser.service
+    sudo systemctl daemon-reload
+fi
+
+filebrowser_service=$(cat <<'EOT'
+[Unit]
+Description=FileBrowser Quantum
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/filebrowser
+ExecStart=/opt/filebrowser/filebrowser -c /opt/filebrowser/config.yaml
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOT
+)
+append_text_to_file "$filebrowser_service" "/etc/systemd/system/filebrowser.service" "[Unit]"
+
+sudo systemctl daemon-reload
+sudo systemctl enable filebrowser
+sudo systemctl start filebrowser
+
 ACTIVE_STATUS=$(systemctl is-active usbshare.service)
 if [[ "$ACTIVE_STATUS" = "active" ]]; then
     echo "Service is currently active, shutting down"
     sudo systemctl stop usbshare.service
     sudo systemctl disable usbshare.service
-    sudo modprobe g_multi -r
     sudo modprobe g_mass_storage -r
     sudo systemctl daemon-reload
 fi
@@ -268,7 +289,7 @@ sudo systemctl start usbshare.service
 if [ "$COMPATIBILITY_CHECK_PASSED" = false ]; then
     echo "It looks like you ran this script on a different hardware model."
     echo "If everything worked as expected, please consider creating a new issue in the repository:"
-    echo "https://github.com/mrfenyx/RPi-Zero-W-WiFi-USB"
+    echo "https://github.com/emintufan/RPi-Zero-W-WiFi-USB"
     echo "This will help us to update the list of known compatible models. Thank you!"
 fi
 
