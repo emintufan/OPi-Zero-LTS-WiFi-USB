@@ -12,7 +12,8 @@ sudo chmod +x install.sh
 sudo ./install.sh
 ```
 # Accessing to Filebrowser Quantum
-Just go: http://YOUR-ORANGE-PI-LOCAL-IP/
+Just go to: http://YOUR-ORANGE-PI-LOCAL-IP
+
 Enter login credentials:
 ```
 Username: admin
