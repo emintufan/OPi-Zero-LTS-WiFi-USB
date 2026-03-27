@@ -11,3 +11,11 @@ cd OPi-Zero-LTS-W-WiFi-USB
 sudo chmod +x install.sh
 sudo ./install.sh
 ```
+# Accessing to Filebrowser Quantum
+Just go: http://YOUR-ORANGE-PI-LOCAL-IP/
+Enter login credentials:
+```
+Username: admin
+Password: admin
+```
+And don't forget to change your credentials!
